@@ -21,10 +21,13 @@ void PID::Init(double Kp_, double Ki_, double Kd_) {
 
 	// initialize coefficients
 	Kp = Kp_;
-	Ki = Ki_;
 	Kd = Kd_;
+	Ki = Ki_;
 }
 
+/*
+ * Update the PID error variables given cross track error
+ */
 void PID::UpdateError(double cte) {
 }
 
@@ -32,7 +35,7 @@ void PID::UpdateError(double cte) {
  * Calculate the total PID error
  */
 double PID::TotalError() {
-	double total_error = p_error + d_error + i_error;
+	double total_error = -Kp * p_error -Kd * d_error -Ki * i_error;
 	return total_error;
 }
 
