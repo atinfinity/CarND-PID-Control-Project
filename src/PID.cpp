@@ -29,6 +29,10 @@ void PID::Init(double Kp_, double Ki_, double Kd_) {
  * Update the PID error variables given cross track error
  */
 void PID::UpdateError(double cte) {
+	double prev_cte = p_error;
+	p_error = cte;
+	d_error = cte - prev_cte;
+	i_error += cte;
 }
 
 /*
