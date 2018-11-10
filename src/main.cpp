@@ -44,7 +44,7 @@ int main() {
     pid.Init(p[0], p[1], p[2]);
   }
   else {
-    pid.Init(0.227972, 0.000849461, 2.08304); // tuned parameters using twiddle
+    pid.Init(0.246882, 0.000911106, 2.08231); // tuned parameters using twiddle
   }
 
   h.onMessage([&pid, &p, &dp, &best_p](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
