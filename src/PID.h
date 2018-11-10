@@ -18,6 +18,21 @@ public:
   double Kd;
 
   /*
+   * Twiddle Parameters
+   */
+  unsigned int step;
+  unsigned int max_step;
+  unsigned int p_iterator;
+  unsigned int total_iterator;
+  double total_cte;
+  double error;
+  double best_error;
+  double tolerance;
+  unsigned int sub_move;
+  bool first;
+  bool second;
+
+  /*
    * Constructor
    */
   PID();

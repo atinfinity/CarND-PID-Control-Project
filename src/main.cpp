@@ -29,18 +29,26 @@ std::string hasData(std::string s) {
   return "";
 }
 
+bool twiddle = false;
+
 int main() {
   uWS::Hub h;
-
   PID pid;
 
-  // TODO: Initialize the pid variable.
-  double Kp = 0.2;
-  double Ki = 3.0;
-  double Kd = 0.004;
-  pid.Init(Kp, Ki, Kd);
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  double p[3]  = {0.1,  0.0001, 1.5};
+  double dp[3] = {0.01, 0.0001, 0.1};
+  double best_p[3] = {p[0], p[1], p[2]};
+
+  // Initialize the pid variable.
+  if (twiddle == true) {
+    pid.Init(p[0], p[1], p[2]);
+  }
+  else {
+    pid.Init(0.194872, 0.000871561, 1.89404); // tuned parameters using twiddle
+  }
+
+  h.onMessage([&pid, &p, &dp, &best_p](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -54,26 +62,124 @@ int main() {
           double cte = std::stod(j[1]["cte"].get<std::string>());
           double speed = std::stod(j[1]["speed"].get<std::string>());
           double angle = std::stod(j[1]["steering_angle"].get<std::string>());
-
-          /*
-           * TODO: Calcuate steering value here, remember the steering value is
-           * [-1, 1].
-           * NOTE: Feel free to play around with the throttle and speed. Maybe use
-           * another PID controller to control the speed!
-           */
-
-          pid.UpdateError(cte);
-          double steer_value = pid.TotalError();
-
-          // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
-
           json msgJson;
-          msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
-          auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
-          ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+
+          if (twiddle == true) {
+            pid.total_cte = pid.total_cte + std::pow(cte, 2);
+            if (pid.step == 0) {
+              pid.Init(p[0], p[1], p[2]); 
+            }
+
+            // Steering value
+            pid.UpdateError(cte);
+            double steer_value = pid.TotalError();
+            pid.step++;
+            if (pid.step > pid.max_step) { 
+              if (pid.first == true) {
+                std::cout << "(p[0], p[1], p[2]) = (" << p[0] << ", " << p[1] << ", " << p[2] << ")" << std::endl;
+                p[pid.p_iterator] += dp[pid.p_iterator];
+                pid.first = false;
+              }
+              else {
+                pid.error = pid.total_cte / pid.max_step;
+                
+                if ((pid.error < pid.best_error) && (pid.second == true)) {
+                    pid.best_error = pid.error;
+                    best_p[0] = p[0];
+                    best_p[1] = p[1];
+                    best_p[2] = p[2];
+                    dp[pid.p_iterator] *= 1.1;
+                    pid.sub_move++;
+
+                    std::cout << "iteration = " << pid.total_iterator << std::endl;
+                    std::cout << "p_iterator = " << pid.p_iterator << std::endl;
+                    std::cout << "(p[0], p[1], p[2]) = (" << p[0] << ", " << p[1] << ", " << p[2] << ")" << std::endl;
+                    std::cout << "error = " << pid.error << std::endl;
+                    std::cout << "best_error = " << pid.best_error << std::endl;
+                    std::cout << "best (p[0], p[1], p[2]) = (" << p[0] << ", " << p[1] << ", " << p[2] << ")" << std::endl;
+                }
+                else {
+                  if (pid.second == true) {
+                    std::cout << "(p[0], p[1], p[2]) = (" << p[0] << ", " << p[1] << ", " << p[2] << ")" << std::endl;
+                    p[pid.p_iterator] -= 2 * dp[pid.p_iterator];
+                    pid.second = false;
+                  }
+                  else {
+                    std::cout << "iteration = " << pid.total_iterator << std::endl;
+                    std::cout << "p_iterator = " << pid.p_iterator << std::endl;
+                    std::cout << "(p[0], p[1], p[2]) = (" << p[0] << ", " << p[1] << ", " << p[2] << ")" << std::endl;
+                    if (pid.error < pid.best_error) {
+                        pid.best_error = pid.error;
+                        best_p[0] = p[0];
+                        best_p[1] = p[1];
+                        best_p[2] = p[2];
+                        dp[pid.p_iterator] *= 1.1;
+                        pid.sub_move++;
+                    }
+                    else {
+                        p[pid.p_iterator] += dp[pid.p_iterator];
+                        dp[pid.p_iterator] *= 0.9;
+                        pid.sub_move++;
+                    }
+                    std::cout << "error = " << pid.error << std::endl;
+                    std::cout << "best_error = " << pid.best_error << std::endl;
+                    std::cout << "best (p[0], p[1], p[2]) = (" << p[0] << ", " << p[1] << ", " << p[2] << ")" << std::endl;
+                  }
+                }
+                
+              }
+
+              if (pid.sub_move > 0) {
+                pid.p_iterator++;
+                pid.first = true;
+                pid.second = true;
+                pid.sub_move = 0;
+              }
+
+              // reset p_iterator
+              if (pid.p_iterator == 3) {
+                pid.p_iterator = 0;
+              }
+
+              pid.step      = 0;
+              pid.total_cte = 0.0;
+              pid.total_iterator++;
+
+              double sum_dp = dp[0] + dp[1] + dp[2];
+              if (sum_dp < pid.tolerance) {
+                std::cout << "Best p[0] p[1] p[2]: " << best_p[0] << best_p[1] << best_p[2] << std::endl;
+              }
+              else {
+                std::string reset_msg = "42[\"reset\",{}]";
+                ws.send(reset_msg.data(), reset_msg.length(), uWS::OpCode::TEXT);
+              }
+            }
+            else {
+              msgJson["steering_angle"] = steer_value;
+              msgJson["throttle"] = 0.3;
+              auto msg = "42[\"steer\"," + msgJson.dump() + "]";
+              //std::cout << msg << std::endl;
+              ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+            }
+          }
+          else {
+            /*
+             * Calcuate steering value here, remember the steering value is [-1, 1].
+             * NOTE: Feel free to play around with the throttle and speed. Maybe use
+             * another PID controller to control the speed!
+             */
+
+            pid.UpdateError(cte);
+            double steer_value = pid.TotalError();
+
+            // DEBUG
+            std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+
+            msgJson["steering_angle"] = steer_value;
+            msgJson["throttle"] = 0.3;
+            auto msg = "42[\"steer\"," + msgJson.dump() + "]";
+            ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+          }
         }
       }
       else {
