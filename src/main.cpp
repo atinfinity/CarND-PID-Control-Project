@@ -35,7 +35,6 @@ int main() {
   uWS::Hub h;
   PID pid;
 
-
   double p[3]  = {0.1,  0.0001, 1.5};
   double dp[3] = {0.01, 0.0001, 0.1};
   double best_p[3] = {p[0], p[1], p[2]};
