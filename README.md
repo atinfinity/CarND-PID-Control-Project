@@ -37,6 +37,13 @@ There's an experimental patch for windows in this [PR](https://github.com/udacit
 
 Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
 
+## Materials
+### Output Videos
+- [pid_tuned_result.mp4](https://github.com/atinfinity/CarND-PID-Control-Project/tree/master/movies/pid_tuned_result.mp4)
+
+### Report
+- [writeup.md](https://github.com/atinfinity/CarND-PID-Control-Project/blob/master/writeup.md)
+
 ## Editor Settings
 
 We've purposefully kept editor configuration files out of this repo in order to
