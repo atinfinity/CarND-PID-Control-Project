@@ -35,8 +35,8 @@ int main() {
   uWS::Hub h;
   PID pid;
 
-  double p[3]  = {0.1,  0.0001, 1.5};
-  double dp[3] = {0.01, 0.0001, 0.1};
+  double p[3]  = {0.1,  0.0001, 1.0};
+  double dp[3] = {0.1, 0.0001, 0.1};
   double best_p[3] = {p[0], p[1], p[2]};
 
   // Initialize the pid variable.
@@ -44,7 +44,7 @@ int main() {
     pid.Init(p[0], p[1], p[2]);
   }
   else {
-    pid.Init(0.246882, 0.000911106, 2.08231); // tuned parameters using twiddle
+    pid.Init(0.2, 0.00104872, 1.5574); // tuned parameters using twiddle
   }
 
   h.onMessage([&pid, &p, &dp, &best_p](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {

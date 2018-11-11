@@ -1,16 +1,10 @@
 #include "PID.h"
 #include <cfloat>
 
-//using namespace std;
-
-/*
- * TODO: Complete the PID class.
- */
-
 PID::PID() {
 	// initialize twiddle parameters
 	step           = 0;
-	max_step       = 1000;
+	max_step       = 1500;
 	p_iterator     = 0;
 	total_iterator = 0;
 	total_cte      = 0.0;
